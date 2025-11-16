@@ -147,6 +147,19 @@ extern float fRandomAngle2Range;
 extern float fRandomSmoothDepth;
 extern float fRandomSmoothNormal;
 extern float fRandomSmoothBonus;
+// Bidirectional Iterative MVS
+extern bool bUseBidirectionalMVS;
+extern unsigned nBidirectionalIters;
+extern float fBidirectionalConvergence;
+extern unsigned nSuperpixelSize;
+extern float fSuperpixelRuler;
+extern float fSuperpixelDepthWeight;
+extern float fPlaneWeight;
+extern float fTextureThreshold;
+extern float fLambdaPhoto;
+extern float fLambdaPlane;
+extern float fLambdaSmooth;
+extern float fLambdaBoundary;
 } // namespace OPTDENSE
 /*----------------------------------------------------------------*/
 

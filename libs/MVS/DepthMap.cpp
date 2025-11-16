@@ -122,6 +122,20 @@ MDEFVAR_OPTDENSE_float(fRandomAngle2Range, "Random Angle2 Range", "Angle 2 range
 MDEFVAR_OPTDENSE_float(fRandomSmoothDepth, "Random Smooth Depth", "Depth variance used during neighbor smoothness assignment (ratio)", "0.02")
 MDEFVAR_OPTDENSE_float(fRandomSmoothNormal, "Random Smooth Normal", "Normal variance used during neighbor smoothness assignment (degrees)", "13")
 MDEFVAR_OPTDENSE_float(fRandomSmoothBonus, "Random Smooth Bonus", "Score factor used to encourage smoothness (1 - disabled)", "0.93")
+
+// Bidirectional Iterative MVS parameters (INNOVATION!)
+DEFVAR_OPTDENSE_bool(bUseBidirectionalMVS, "Use Bidirectional MVS", "Enable bidirectional iterative depth-segmentation loop (experimental)", "0")
+DEFVAR_OPTDENSE_uint32(nBidirectionalIters, "Bidirectional Iterations", "Number of bidirectional depth-segmentation iterations", "5")
+DEFVAR_OPTDENSE_float(fBidirectionalConvergence, "Bidirectional Convergence", "Convergence threshold for bidirectional loop", "0.01")
+DEFVAR_OPTDENSE_uint32(nSuperpixelSize, "Superpixel Size", "Desired superpixel region size in pixels", "20")
+DEFVAR_OPTDENSE_float(fSuperpixelRuler, "Superpixel Ruler", "SLIC compactness parameter (trade-off between color and spatial)", "10.0")
+DEFVAR_OPTDENSE_float(fSuperpixelDepthWeight, "Superpixel Depth Weight", "Weight for depth in depth-guided segmentation [0,1]", "0.5")
+DEFVAR_OPTDENSE_float(fPlaneWeight, "Plane Weight", "Weight for plane constraint in depth estimation [0,1]", "0.5")
+DEFVAR_OPTDENSE_float(fTextureThreshold, "Texture Threshold", "Variance threshold for textureless detection", "0.02")
+DEFVAR_OPTDENSE_float(fLambdaPhoto, "Lambda Photo", "Weight for photometric energy in joint optimization", "1.0")
+DEFVAR_OPTDENSE_float(fLambdaPlane, "Lambda Plane", "Weight for plane energy in joint optimization", "0.3")
+DEFVAR_OPTDENSE_float(fLambdaSmooth, "Lambda Smooth", "Weight for smoothness energy in joint optimization", "0.1")
+DEFVAR_OPTDENSE_float(fLambdaBoundary, "Lambda Boundary", "Weight for boundary energy in joint optimization", "0.2")
 }
 
 

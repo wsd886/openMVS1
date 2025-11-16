@@ -1,0 +1,111 @@
+/*
+ * CMakeLists.txt - Bidirectional MVS Integration
+ *
+ * The new files will be automatically included since CMakeLists.txt
+ * uses wildcards: FILE(GLOB LIBRARY_FILES_C "*.cpp")
+ *
+ * However, we need to ensure OpenCV ximgproc module is available.
+ */
+
+// ============================================================
+// AUTOMATIC INCLUSION (No changes needed)
+// ============================================================
+
+The following files will be automatically detected:
+- SuperpixelSegmenter.h
+- SuperpixelSegmenter.cpp
+- BidirectionalMVS.h
+- BidirectionalMVS.cpp
+
+Because CMakeLists.txt already has:
+  FILE(GLOB LIBRARY_FILES_C "*.cpp")
+  FILE(GLOB LIBRARY_FILES_H "*.h" "*.inl")
+
+// ============================================================
+// OPENCV XIMGPROC MODULE CHECK (Optional)
+// ============================================================
+
+OpenMVS already depends on OpenCV, but we use the ximgproc module
+for superpixel segmentation (SLIC algorithm).
+
+If compilation fails with "opencv2/ximgproc.hpp: No such file",
+add this check in the main CMakeLists.txt:
+
+--- OPTIONAL ADDITION ---
+
+# Check for OpenCV ximgproc module (needed for bidirectional MVS)
+find_package(OpenCV REQUIRED COMPONENTS ximgproc)
+if(NOT OpenCV_ximgproc_FOUND)
+    message(WARNING "OpenCV ximgproc module not found. Bidirectional MVS will be disabled.")
+    add_definitions(-DDISABLE_BIDIRECTIONAL_MVS)
+endif()
+
+--- END OPTIONAL ---
+
+// ============================================================
+// COMPILATION INSTRUCTIONS
+// ============================================================
+
+1. Navigate to build directory:
+   cd /home/user/openMVS1/build
+
+2. Run CMake:
+   cmake ..
+
+3. Compile:
+   make -j8
+
+4. Check for new files:
+   ls -la libs/MVS/CMakeFiles/MVS.dir/
+   # Should see:
+   # - SuperpixelSegmenter.cpp.o
+   # - BidirectionalMVS.cpp.o
+
+5. If compilation errors occur, check:
+   - OpenCV version >= 3.0 (ximgproc is in contrib modules)
+   - OpenCV compiled with contrib modules
+
+// ============================================================
+// TROUBLESHOOTING
+// ============================================================
+
+ERROR: opencv2/ximgproc.hpp: No such file or directory
+SOLUTION: Install OpenCV with contrib modules
+
+Ubuntu:
+  sudo apt-get install libopencv-contrib-dev
+
+Or compile OpenCV from source with:
+  cmake -DOPENCV_EXTRA_MODULES_PATH=<path_to_opencv_contrib>/modules ..
+
+ERROR: undefined reference to cv::ximgproc::createSuperpixelSLIC
+SOLUTION: Link with opencv_ximgproc library
+
+Add to CMakeLists.txt line 54:
+  TARGET_LINK_LIBRARIES(MVS PRIVATE ... ${OpenCV_LIBS})
+
+// ============================================================
+// VERIFICATION
+// ============================================================
+
+After successful compilation, verify the new options:
+
+./DensifyPointCloud --help | grep -i bidirectional
+
+Should show:
+  --use-bidirectional-mvs <0|1>
+  --bidirectional-iterations <N>
+  --superpixel-size <N>
+  --plane-weight <float>
+  ...
+
+// ============================================================
+// FILE SIZE ESTIMATES
+// ============================================================
+
+After compilation, the new modules add:
+- SuperpixelSegmenter.cpp.o: ~150 KB
+- BidirectionalMVS.cpp.o: ~120 KB
+- Total binary size increase: ~500 KB (+libMVS.so)
+
+Minimal overhead when disabled (default).

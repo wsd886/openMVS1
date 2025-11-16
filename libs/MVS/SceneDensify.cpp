@@ -34,6 +34,7 @@
 #include "SceneDensify.h"
 #include "PatchMatchCUDA.h"
 #include "DMapCache.h"
+#include "BidirectionalMVS.h"
 
 using namespace MVS;
 
@@ -642,6 +643,48 @@ bool DepthMapsData::EstimateDepthMap(IIndex idxImage, int nGeometricIter)
 	}
 
 	DepthData& depthData(fullResDepthData);
+
+	// BIDIRECTIONAL ITERATIVE MVS (INNOVATION!)
+	// Apply bidirectional depth-segmentation refinement loop if enabled
+	if (OPTDENSE::bUseBidirectionalMVS && nGeometricIter < 0) {
+		TD_TIMER_STARTD();
+		DEBUG("Applying Bidirectional Iterative MVS refinement to image %3u", depthData.images.front().GetID());
+
+		// Setup bidirectional configuration from OPTDENSE parameters
+		BidirectionalConfig biConfig;
+		biConfig.max_iterations = OPTDENSE::nBidirectionalIters;
+		biConfig.convergence_threshold = OPTDENSE::fBidirectionalConvergence;
+
+		// Superpixel segmentation parameters
+		biConfig.segmentation.region_size = OPTDENSE::nSuperpixelSize;
+		biConfig.segmentation.ruler = OPTDENSE::fSuperpixelRuler;
+		biConfig.segmentation.depth_weight = OPTDENSE::fSuperpixelDepthWeight;
+
+		// Depth estimation parameters
+		biConfig.plane_weight = OPTDENSE::fPlaneWeight;
+		biConfig.texture_threshold = OPTDENSE::fTextureThreshold;
+		biConfig.confidence_threshold = 0.5f;
+
+		// Joint optimization weights
+		biConfig.lambda_photo = OPTDENSE::fLambdaPhoto;
+		biConfig.lambda_plane = OPTDENSE::fLambdaPlane;
+		biConfig.lambda_smooth = OPTDENSE::fLambdaSmooth;
+		biConfig.lambda_boundary = OPTDENSE::fLambdaBoundary;
+
+		// Adaptive parameters
+		biConfig.adaptive_weights = true;
+		biConfig.early_stopping = true;
+
+		// Create bidirectional MVS engine and run refinement
+		BidirectionalMVS bidirectionalMVS(biConfig);
+		if (bidirectionalMVS.EstimateDepthMap(depthData)) {
+			bidirectionalMVS.PrintIterationStats();
+			DEBUG("Bidirectional MVS refinement completed (%s)", TD_TIMER_GET_FMT().c_str());
+		} else {
+			DEBUG("WARNING: Bidirectional MVS refinement failed");
+		}
+	}
+
 	// remove all estimates with too big score and invert confidence map
 	{
 		const float fNCCThresholdKeep(OPTDENSE::fNCCThresholdKeep);

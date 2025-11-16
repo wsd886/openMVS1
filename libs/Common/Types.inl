@@ -3078,8 +3078,13 @@ bool TImage<TYPE>::Save(const String& fileName) const
 		compression_params.push_back(95);
 	} else
 	if (ext == ".jxl") {
+		#if CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 7
 		compression_params.push_back(cv::IMWRITE_JPEGXL_QUALITY);
 		compression_params.push_back(95);
+		#else
+		VERBOSE("warning: JPEG-XL support requires OpenCV 4.7+, falling back to PNG");
+		return Save(Util::getFilePath(fileName) + Util::getFileName(fileName) + ".png");
+		#endif
 	} else
 	if (ext == ".pfm") {
 		if (Base::depth() != CV_32F)

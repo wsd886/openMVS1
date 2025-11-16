@@ -55,16 +55,21 @@ void Superpixel::FitPlane(const DepthData& depthData, float conf_threshold)
 	has_plane = (plane_confidence > 0.7f);
 
 	if (has_plane) {
-		normal = Cast<Normal::Type>(plane.m_vN);
+		// Convert Eigen vector to Point3f
+		normal = Normal((float)plane.m_vN(0), (float)plane.m_vN(1), (float)plane.m_vN(2));
 
 		// Compute depth at centroid
 		const Point3f X_center = camera.TransformPointI2C(Point3f(
 			(float)center.x, (float)center.y, 1.f
 		));
-		depth_center = (Depth)(-plane.m_fD / plane.m_vN.dot(X_center));
+		// Manual dot product: plane.m_vN.dot(X_center)
+		const float dot_product = (float)(plane.m_vN(0) * X_center.x +
+		                                   plane.m_vN(1) * X_center.y +
+		                                   plane.m_vN(2) * X_center.z);
+		depth_center = (Depth)(-plane.m_fD / dot_product);
 
 		// Ensure normal points toward camera
-		if (normal.dot(Cast<Normal::Type>(X_center)) > 0)
+		if (normal.dot(X_center) > 0)
 			normal = -normal;
 	}
 }
@@ -79,7 +84,10 @@ Depth Superpixel::ProjectDepth(const ImageRef& x, const Camera& camera) const
 	const Point3f ray = camera.TransformPointI2C(Point3f((float)x.x, (float)x.y, 1.f));
 
 	// Ray-plane intersection: n·(t*ray) + d = 0
-	const float denominator = plane.m_vN.dot(ray);
+	// Manual dot product: plane.m_vN.dot(ray)
+	const float denominator = (float)(plane.m_vN(0) * ray.x +
+	                                   plane.m_vN(1) * ray.y +
+	                                   plane.m_vN(2) * ray.z);
 	if (ABS(denominator) < 1e-6f)
 		return 0;
 
@@ -453,12 +461,4 @@ Image8U3 SuperpixelSegmenter::VisualizePlanes() const
 		}
 	}
 	return vis;
-}
-
-// Query superpixel ID
-int SuperpixelSegmenter::GetSuperpixelID(const ImageRef& x) const
-{
-	if (x.x < 0 || x.x >= labels.cols || x.y < 0 || x.y >= labels.rows)
-		return -1;
-	return labels.at<int>(x.y, x.x);
 }

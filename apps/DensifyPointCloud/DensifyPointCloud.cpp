@@ -144,6 +144,18 @@ bool Application::Initialize(size_t argc, LPCTSTR* argv)
 	int nIgnoreMaskLabel;
 	float fDepthReprojectionErrorThreshold;
 	bool bRemoveDmaps;
+	bool bUseBidirectionalMVS;
+	unsigned nBidirectionalIters;
+	float fBidirectionalConvergence;
+	unsigned nSuperpixelSize;
+	float fSuperpixelRuler;
+	float fSuperpixelDepthWeight;
+	float fPlaneWeight;
+	float fTextureThreshold;
+	float fLambdaPhoto;
+	float fLambdaPlane;
+	float fLambdaSmooth;
+	float fLambdaBoundary;
 	boost::program_options::options_description config("Densify options");
 	config.add_options()
 		("input-file,i", boost::program_options::value<std::string>(&OPT::strInputFileName), "input filename containing camera poses and image list")
@@ -180,6 +192,18 @@ bool Application::Initialize(size_t argc, LPCTSTR* argv)
 		("remove-dmaps", boost::program_options::value(&bRemoveDmaps)->default_value(false), "remove depth-maps after fusion")
 		("tower-mode", boost::program_options::value(&OPT::nTowerMode)->default_value(4), "add a cylinder of points in the center of ROI; scene assume to be Z-up oriented (0 - disabled, 1 - replace, 2 - append, 3 - select neighbors, 4 - select neighbors & append, <0 - force tower mode)")
 		("normalize-coordinates", boost::program_options::value(&OPT::nNormalizeCoordinates)->default_value(0), "normalize scene coordinates and output the inverse transform to file (0 - disabled, 1 - center, 2 - center & scale)")
+		("use-bidirectional-mvs", boost::program_options::value(&bUseBidirectionalMVS)->default_value(false), "enable bidirectional iterative depth-segmentation refinement (experimental)")
+		("bidirectional-iterations", boost::program_options::value(&nBidirectionalIters)->default_value(5), "number of bidirectional iterations")
+		("bidirectional-convergence", boost::program_options::value(&fBidirectionalConvergence)->default_value(0.01f), "convergence threshold for bidirectional loop")
+		("superpixel-size", boost::program_options::value(&nSuperpixelSize)->default_value(20), "desired superpixel region size in pixels")
+		("superpixel-ruler", boost::program_options::value(&fSuperpixelRuler)->default_value(10.0f), "SLIC compactness parameter")
+		("superpixel-depth-weight", boost::program_options::value(&fSuperpixelDepthWeight)->default_value(0.5f), "weight for depth in depth-guided segmentation")
+		("plane-weight", boost::program_options::value(&fPlaneWeight)->default_value(0.5f), "weight for plane constraint in depth estimation")
+		("texture-threshold", boost::program_options::value(&fTextureThreshold)->default_value(0.02f), "variance threshold for textureless detection")
+		("lambda-photo", boost::program_options::value(&fLambdaPhoto)->default_value(1.0f), "weight for photometric energy")
+		("lambda-plane", boost::program_options::value(&fLambdaPlane)->default_value(0.3f), "weight for plane energy")
+		("lambda-smooth", boost::program_options::value(&fLambdaSmooth)->default_value(0.1f), "weight for smoothness energy")
+		("lambda-boundary", boost::program_options::value(&fLambdaBoundary)->default_value(0.2f), "weight for boundary energy")
 		;
 
 	// hidden options, allowed both on command line and
@@ -275,6 +299,18 @@ bool Application::Initialize(size_t argc, LPCTSTR* argv)
 	OPTDENSE::nIgnoreMaskLabel = nIgnoreMaskLabel;
 	OPTDENSE::fDepthReprojectionErrorThreshold = fDepthReprojectionErrorThreshold;
 	OPTDENSE::bRemoveDmaps = bRemoveDmaps;
+	OPTDENSE::bUseBidirectionalMVS = bUseBidirectionalMVS;
+	OPTDENSE::nBidirectionalIters = nBidirectionalIters;
+	OPTDENSE::fBidirectionalConvergence = fBidirectionalConvergence;
+	OPTDENSE::nSuperpixelSize = nSuperpixelSize;
+	OPTDENSE::fSuperpixelRuler = fSuperpixelRuler;
+	OPTDENSE::fSuperpixelDepthWeight = fSuperpixelDepthWeight;
+	OPTDENSE::fPlaneWeight = fPlaneWeight;
+	OPTDENSE::fTextureThreshold = fTextureThreshold;
+	OPTDENSE::fLambdaPhoto = fLambdaPhoto;
+	OPTDENSE::fLambdaPlane = fLambdaPlane;
+	OPTDENSE::fLambdaSmooth = fLambdaSmooth;
+	OPTDENSE::fLambdaBoundary = fLambdaBoundary;
 	if (!bValidConfig && !OPT::strDenseConfigFileName.empty())
 		OPTDENSE::oConfig.Save(OPT::strDenseConfigFileName);
 

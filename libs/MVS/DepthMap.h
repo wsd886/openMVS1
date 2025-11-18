@@ -160,6 +160,27 @@ extern float fLambdaPhoto;
 extern float fLambdaPlane;
 extern float fLambdaSmooth;
 extern float fLambdaBoundary;
+// MCMC-PatchMatch
+extern bool bUseMCMCPatchMatch;
+extern float fMCMCBeta0;
+extern float fMCMCBetaMin;
+extern float fMCMCBetaMax;
+extern float fMCMCTauUncertainty;
+extern float fMCMCLambdaPrior;
+extern float fMCMCSigmaPlane;
+extern float fMCMCPlaneConfThreshold;
+extern unsigned nMCMCSuperpixelSize;
+extern float fMCMCSuperpixelRuler;
+extern float fMCMCSuperpixelDepthWeight;
+extern unsigned nMCMCIterations;
+extern unsigned nMCMCSamplesLowTexture;
+extern unsigned nMCMCSamplesHighTexture;
+extern bool bMCMCGuaranteeComplete;
+extern unsigned nMCMCDiffusionRadius;
+extern float fMCMCMinFillConfidence;
+extern float fMCMCTextureThreshold;
+extern bool bMCMCRegionSpecific;
+extern float fMCMCConvergenceThreshold;
 } // namespace OPTDENSE
 /*----------------------------------------------------------------*/
 

@@ -136,6 +136,35 @@ DEFVAR_OPTDENSE_float(fLambdaPhoto, "Lambda Photo", "Weight for photometric ener
 DEFVAR_OPTDENSE_float(fLambdaPlane, "Lambda Plane", "Weight for plane energy in joint optimization", "0.3")
 DEFVAR_OPTDENSE_float(fLambdaSmooth, "Lambda Smooth", "Weight for smoothness energy in joint optimization", "0.1")
 DEFVAR_OPTDENSE_float(fLambdaBoundary, "Lambda Boundary", "Weight for boundary energy in joint optimization", "0.2")
+
+// MCMC-PatchMatch parameters (THEORETICAL INNOVATION!)
+DEFVAR_OPTDENSE_bool(bUseMCMCPatchMatch, "Use MCMC PatchMatch", "Enable MCMC-enhanced PatchMatch with guaranteed hole filling", "0")
+// Temperature scheduling
+DEFVAR_OPTDENSE_float(fMCMCBeta0, "MCMC Beta0", "Initial inverse temperature for MCMC acceptance", "5.0")
+DEFVAR_OPTDENSE_float(fMCMCBetaMin, "MCMC Beta Min", "Minimum beta for low-texture regions (more exploration)", "2.0")
+DEFVAR_OPTDENSE_float(fMCMCBetaMax, "MCMC Beta Max", "Maximum beta for high-texture regions (more exploitation)", "10.0")
+DEFVAR_OPTDENSE_float(fMCMCTauUncertainty, "MCMC Tau Uncertainty", "Uncertainty threshold for adaptive temperature", "0.05")
+// Planar prior
+DEFVAR_OPTDENSE_float(fMCMCLambdaPrior, "MCMC Lambda Prior", "Weight for planar prior in Bayesian posterior", "1.0")
+DEFVAR_OPTDENSE_float(fMCMCSigmaPlane, "MCMC Sigma Plane", "Planar variance for prior distribution", "0.5")
+DEFVAR_OPTDENSE_float(fMCMCPlaneConfThreshold, "MCMC Plane Confidence", "Minimum plane confidence for using planar prior", "0.7")
+// Superpixel segmentation
+DEFVAR_OPTDENSE_uint32(nMCMCSuperpixelSize, "MCMC Superpixel Size", "Target superpixel size for plane fitting", "15")
+DEFVAR_OPTDENSE_float(fMCMCSuperpixelRuler, "MCMC Superpixel Ruler", "SLIC spatial smoothness parameter", "20.0")
+DEFVAR_OPTDENSE_float(fMCMCSuperpixelDepthWeight, "MCMC Superpixel Depth Weight", "Depth channel weight in segmentation", "0.5")
+// MCMC sampling
+DEFVAR_OPTDENSE_uint32(nMCMCIterations, "MCMC Iterations", "Number of MCMC iterations per pixel", "3")
+DEFVAR_OPTDENSE_uint32(nMCMCSamplesLowTexture, "MCMC Samples Low Texture", "Proposal samples for low-texture regions", "5")
+DEFVAR_OPTDENSE_uint32(nMCMCSamplesHighTexture, "MCMC Samples High Texture", "Proposal samples for high-texture regions", "1")
+// Guaranteed hole filling
+DEFVAR_OPTDENSE_bool(bMCMCGuaranteeComplete, "MCMC Guarantee Complete", "Force 100% spatial coverage with multi-level fallback", "1")
+DEFVAR_OPTDENSE_uint32(nMCMCDiffusionRadius, "MCMC Diffusion Radius", "Maximum radius for depth diffusion fallback", "10")
+DEFVAR_OPTDENSE_float(fMCMCMinFillConfidence, "MCMC Min Fill Confidence", "Minimum confidence for valid hole fill", "0.3")
+// Region-specific optimization
+DEFVAR_OPTDENSE_float(fMCMCTextureThreshold, "MCMC Texture Threshold", "Variance threshold for low-texture detection", "0.05")
+DEFVAR_OPTDENSE_bool(bMCMCRegionSpecific, "MCMC Region Specific", "Enable different strategies per texture region", "1")
+// Convergence
+DEFVAR_OPTDENSE_float(fMCMCConvergenceThreshold, "MCMC Convergence", "Convergence threshold for MCMC chain", "0.01")
 }
 
 

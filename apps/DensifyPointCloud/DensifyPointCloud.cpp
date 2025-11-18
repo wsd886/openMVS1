@@ -156,6 +156,27 @@ bool Application::Initialize(size_t argc, LPCTSTR* argv)
 	float fLambdaPlane;
 	float fLambdaSmooth;
 	float fLambdaBoundary;
+	// MCMC-PatchMatch
+	bool bUseMCMCPatchMatch;
+	float fMCMCBeta0;
+	float fMCMCBetaMin;
+	float fMCMCBetaMax;
+	float fMCMCTauUncertainty;
+	float fMCMCLambdaPrior;
+	float fMCMCSigmaPlane;
+	float fMCMCPlaneConfThreshold;
+	unsigned nMCMCSuperpixelSize;
+	float fMCMCSuperpixelRuler;
+	float fMCMCSuperpixelDepthWeight;
+	unsigned nMCMCIterations;
+	unsigned nMCMCSamplesLowTexture;
+	unsigned nMCMCSamplesHighTexture;
+	bool bMCMCGuaranteeComplete;
+	unsigned nMCMCDiffusionRadius;
+	float fMCMCMinFillConfidence;
+	float fMCMCTextureThreshold;
+	bool bMCMCRegionSpecific;
+	float fMCMCConvergenceThreshold;
 	boost::program_options::options_description config("Densify options");
 	config.add_options()
 		("input-file,i", boost::program_options::value<std::string>(&OPT::strInputFileName), "input filename containing camera poses and image list")
@@ -204,6 +225,26 @@ bool Application::Initialize(size_t argc, LPCTSTR* argv)
 		("lambda-plane", boost::program_options::value(&fLambdaPlane)->default_value(0.3f), "weight for plane energy")
 		("lambda-smooth", boost::program_options::value(&fLambdaSmooth)->default_value(0.1f), "weight for smoothness energy")
 		("lambda-boundary", boost::program_options::value(&fLambdaBoundary)->default_value(0.2f), "weight for boundary energy")
+		("use-mcmc-patchmatch", boost::program_options::value(&bUseMCMCPatchMatch)->default_value(false), "enable MCMC-enhanced PatchMatch with guaranteed hole filling")
+		("mcmc-beta0", boost::program_options::value(&fMCMCBeta0)->default_value(5.0f), "initial inverse temperature for MCMC acceptance")
+		("mcmc-beta-min", boost::program_options::value(&fMCMCBetaMin)->default_value(2.0f), "minimum beta for low-texture regions")
+		("mcmc-beta-max", boost::program_options::value(&fMCMCBetaMax)->default_value(10.0f), "maximum beta for high-texture regions")
+		("mcmc-tau-uncertainty", boost::program_options::value(&fMCMCTauUncertainty)->default_value(0.05f), "uncertainty threshold for adaptive temperature")
+		("mcmc-lambda-prior", boost::program_options::value(&fMCMCLambdaPrior)->default_value(1.0f), "weight for planar prior in Bayesian posterior")
+		("mcmc-sigma-plane", boost::program_options::value(&fMCMCSigmaPlane)->default_value(0.5f), "planar variance for prior distribution")
+		("mcmc-plane-conf-threshold", boost::program_options::value(&fMCMCPlaneConfThreshold)->default_value(0.7f), "minimum plane confidence for using planar prior")
+		("mcmc-superpixel-size", boost::program_options::value(&nMCMCSuperpixelSize)->default_value(15), "target superpixel size for plane fitting")
+		("mcmc-superpixel-ruler", boost::program_options::value(&fMCMCSuperpixelRuler)->default_value(20.0f), "SLIC spatial smoothness parameter")
+		("mcmc-superpixel-depth-weight", boost::program_options::value(&fMCMCSuperpixelDepthWeight)->default_value(0.5f), "depth channel weight in segmentation")
+		("mcmc-iterations", boost::program_options::value(&nMCMCIterations)->default_value(3), "number of MCMC iterations per pixel")
+		("mcmc-samples-low-texture", boost::program_options::value(&nMCMCSamplesLowTexture)->default_value(5), "proposal samples for low-texture regions")
+		("mcmc-samples-high-texture", boost::program_options::value(&nMCMCSamplesHighTexture)->default_value(1), "proposal samples for high-texture regions")
+		("mcmc-guarantee-complete", boost::program_options::value(&bMCMCGuaranteeComplete)->default_value(true), "force 100% spatial coverage with multi-level fallback")
+		("mcmc-diffusion-radius", boost::program_options::value(&nMCMCDiffusionRadius)->default_value(10), "maximum radius for depth diffusion fallback")
+		("mcmc-min-fill-confidence", boost::program_options::value(&fMCMCMinFillConfidence)->default_value(0.3f), "minimum confidence for valid hole fill")
+		("mcmc-texture-threshold", boost::program_options::value(&fMCMCTextureThreshold)->default_value(0.05f), "variance threshold for low-texture detection")
+		("mcmc-region-specific", boost::program_options::value(&bMCMCRegionSpecific)->default_value(true), "enable different strategies per texture region")
+		("mcmc-convergence", boost::program_options::value(&fMCMCConvergenceThreshold)->default_value(0.01f), "convergence threshold for MCMC chain")
 		;
 
 	// hidden options, allowed both on command line and
@@ -311,6 +352,26 @@ bool Application::Initialize(size_t argc, LPCTSTR* argv)
 	OPTDENSE::fLambdaPlane = fLambdaPlane;
 	OPTDENSE::fLambdaSmooth = fLambdaSmooth;
 	OPTDENSE::fLambdaBoundary = fLambdaBoundary;
+	OPTDENSE::bUseMCMCPatchMatch = bUseMCMCPatchMatch;
+	OPTDENSE::fMCMCBeta0 = fMCMCBeta0;
+	OPTDENSE::fMCMCBetaMin = fMCMCBetaMin;
+	OPTDENSE::fMCMCBetaMax = fMCMCBetaMax;
+	OPTDENSE::fMCMCTauUncertainty = fMCMCTauUncertainty;
+	OPTDENSE::fMCMCLambdaPrior = fMCMCLambdaPrior;
+	OPTDENSE::fMCMCSigmaPlane = fMCMCSigmaPlane;
+	OPTDENSE::fMCMCPlaneConfThreshold = fMCMCPlaneConfThreshold;
+	OPTDENSE::nMCMCSuperpixelSize = nMCMCSuperpixelSize;
+	OPTDENSE::fMCMCSuperpixelRuler = fMCMCSuperpixelRuler;
+	OPTDENSE::fMCMCSuperpixelDepthWeight = fMCMCSuperpixelDepthWeight;
+	OPTDENSE::nMCMCIterations = nMCMCIterations;
+	OPTDENSE::nMCMCSamplesLowTexture = nMCMCSamplesLowTexture;
+	OPTDENSE::nMCMCSamplesHighTexture = nMCMCSamplesHighTexture;
+	OPTDENSE::bMCMCGuaranteeComplete = bMCMCGuaranteeComplete;
+	OPTDENSE::nMCMCDiffusionRadius = nMCMCDiffusionRadius;
+	OPTDENSE::fMCMCMinFillConfidence = fMCMCMinFillConfidence;
+	OPTDENSE::fMCMCTextureThreshold = fMCMCTextureThreshold;
+	OPTDENSE::bMCMCRegionSpecific = bMCMCRegionSpecific;
+	OPTDENSE::fMCMCConvergenceThreshold = fMCMCConvergenceThreshold;
 	if (!bValidConfig && !OPT::strDenseConfigFileName.empty())
 		OPTDENSE::oConfig.Save(OPT::strDenseConfigFileName);
 

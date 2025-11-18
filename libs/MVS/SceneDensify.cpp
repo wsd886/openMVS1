@@ -35,6 +35,7 @@
 #include "PatchMatchCUDA.h"
 #include "DMapCache.h"
 #include "BidirectionalMVS.h"
+#include "MCMCPatchMatch.h"
 
 using namespace MVS;
 
@@ -682,6 +683,62 @@ bool DepthMapsData::EstimateDepthMap(IIndex idxImage, int nGeometricIter)
 			DEBUG("Bidirectional MVS refinement completed (%s)", TD_TIMER_GET_FMT().c_str());
 		} else {
 			DEBUG("WARNING: Bidirectional MVS refinement failed");
+		}
+	}
+
+	// MCMC-PATCHMATCH (THEORETICAL INNOVATION!)
+	// Apply MCMC-enhanced PatchMatch with guaranteed hole filling
+	if (OPTDENSE::bUseMCMCPatchMatch && nGeometricIter < 0) {
+		TD_TIMER_STARTD();
+		DEBUG("Applying MCMC-PatchMatch with guaranteed hole filling to image %3u", depthData.images.front().GetID());
+
+		// Setup MCMC configuration from OPTDENSE parameters
+		MCMCConfig mcmcConfig;
+
+		// Temperature scheduling
+		mcmcConfig.beta_0 = OPTDENSE::fMCMCBeta0;
+		mcmcConfig.beta_min = OPTDENSE::fMCMCBetaMin;
+		mcmcConfig.beta_max = OPTDENSE::fMCMCBetaMax;
+		mcmcConfig.tau_uncertainty = OPTDENSE::fMCMCTauUncertainty;
+
+		// Planar prior
+		mcmcConfig.lambda_prior = OPTDENSE::fMCMCLambdaPrior;
+		mcmcConfig.sigma_plane = OPTDENSE::fMCMCSigmaPlane;
+		mcmcConfig.plane_confidence_threshold = OPTDENSE::fMCMCPlaneConfThreshold;
+
+		// Superpixel segmentation
+		mcmcConfig.superpixel_size = OPTDENSE::nMCMCSuperpixelSize;
+		mcmcConfig.superpixel_ruler = OPTDENSE::fMCMCSuperpixelRuler;
+		mcmcConfig.superpixel_depth_weight = OPTDENSE::fMCMCSuperpixelDepthWeight;
+
+		// MCMC sampling
+		mcmcConfig.max_mcmc_iterations = OPTDENSE::nMCMCIterations;
+		mcmcConfig.num_samples_low_texture = OPTDENSE::nMCMCSamplesLowTexture;
+		mcmcConfig.num_samples_high_texture = OPTDENSE::nMCMCSamplesHighTexture;
+
+		// Hole filling
+		mcmcConfig.guarantee_complete_coverage = OPTDENSE::bMCMCGuaranteeComplete;
+		mcmcConfig.max_diffusion_radius = OPTDENSE::nMCMCDiffusionRadius;
+		mcmcConfig.min_fill_confidence = OPTDENSE::fMCMCMinFillConfidence;
+
+		// Region-specific
+		mcmcConfig.texture_threshold = OPTDENSE::fMCMCTextureThreshold;
+		mcmcConfig.enable_region_specific = OPTDENSE::bMCMCRegionSpecific;
+
+		// Convergence
+		mcmcConfig.convergence_threshold = OPTDENSE::fMCMCConvergenceThreshold;
+
+		// Create MCMC-PatchMatch engine and run processing
+		MCMCPatchMatch mcmcPatchMatch(mcmcConfig);
+		if (mcmcPatchMatch.Process(depthData)) {
+			const MCMCPatchMatch::Statistics& stats = mcmcPatchMatch.GetStatistics();
+			stats.Print();
+			DEBUG("MCMC-PatchMatch processing completed: %.1f%% high quality, %.1f%% coverage (%s)",
+				stats.high_quality_ratio * 100.0f,
+				(stats.total_pixels > 0 ? (float)(stats.total_pixels - stats.filled_by_global) / stats.total_pixels : 0.0f) * 100.0f,
+				TD_TIMER_GET_FMT().c_str());
+		} else {
+			DEBUG("WARNING: MCMC-PatchMatch processing failed");
 		}
 	}
 
